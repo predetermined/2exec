@@ -3,31 +3,39 @@ export interface Options {
     log?: boolean;
 }
 
+interface Command {
+    command: string;
+    type: DependencyType;
+    background: boolean;
+}
+
 enum DependencyType {
     NO_DEPENDENCY,
     PREVIOUS_COMMAND_MUST_SUCCEED,
     PREVIOUS_COMMAND_MUST_FAIL
 }
 
-export async function exec(command: string, options: Options = { ignoreErrors: false, log: false }): Promise<string> {
-    options.ignoreErrors ||= false;
-    options.log ||= false;
-
-    const commands: { command: string; type: DependencyType; background?: boolean; }[] = [];
+function parseCommand(command: string): Command[] {
+    const commands: Command[] = [];
     let currentAppendingCommandIndex: number = 0;
     let stringStartIndexOfCurrentCommand: number = 0;
     let currentCommandType: DependencyType = DependencyType.NO_DEPENDENCY;
 
     for (let i = 0; i < command.length; i++) {
         if (i === command.length - 1) {
-            commands[currentAppendingCommandIndex] = { command: command.slice(stringStartIndexOfCurrentCommand).trim(), type: currentCommandType, background: command[command.length - 1] === "&" };
+            commands[currentAppendingCommandIndex] = {
+                command: command.slice(stringStartIndexOfCurrentCommand).trim(),
+                type: currentCommandType,
+                background: command[command.length - 1] === "&"
+            };
             break;
         }
 
         if (command[i] === "&" && command[i + 1] === "&") {
             commands[currentAppendingCommandIndex] = {
                 command: command.slice(stringStartIndexOfCurrentCommand, i - 1).trim(),
-                type: currentCommandType
+                type: currentCommandType,
+                background: false
             }
             currentCommandType = DependencyType.PREVIOUS_COMMAND_MUST_SUCCEED;
             i += 2;
@@ -52,7 +60,8 @@ export async function exec(command: string, options: Options = { ignoreErrors: f
         if (command[i] === "|" && command[i + 1] === "|") {
             commands[currentAppendingCommandIndex] = {
                 command: command.slice(stringStartIndexOfCurrentCommand, i - 1).trim(),
-                type: currentCommandType
+                type: currentCommandType,
+                background: false
             }
             currentCommandType = DependencyType.PREVIOUS_COMMAND_MUST_FAIL;
             i += 2;
@@ -61,21 +70,27 @@ export async function exec(command: string, options: Options = { ignoreErrors: f
         }
     }
 
+    return commands;
+}
+
+export async function exec(command: string, options: Options = { ignoreErrors: false, log: false }): Promise<string> {
+    options.ignoreErrors ??= false;
+    options.log ??= false;
+
+    const commands: Command[] = parseCommand(command);
     const textDecoder: TextDecoder = new TextDecoder();
     let output: string = "";
     let lastRunFailed: boolean = false;
 
     for (const individualCommand of commands) {
         if (individualCommand.type === DependencyType.PREVIOUS_COMMAND_MUST_SUCCEED && lastRunFailed) {
-            if (options.log) console.log(`Skipped command ' ${individualCommand.command}' because last process did fail`);
-            lastRunFailed = true;
-            continue;
+            if (options.log) console.log(`Skipped command ' ${individualCommand.command}' because last process did not succeed`);
+            break;
         }
 
         if (individualCommand.type === DependencyType.PREVIOUS_COMMAND_MUST_FAIL && !lastRunFailed) {
-            if (options.log) console.log(`Skipped command '${individualCommand.command}' because last process didn't fail`);
-            lastRunFailed = true;
-            continue;
+            if (options.log) console.log(`Skipped command '${individualCommand.command}' because last process did not fail`);
+            break;
         }
 
         if (options.log) console.log(`Executing command '${individualCommand.command}'`);
