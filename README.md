@@ -6,6 +6,7 @@ A super simple and reliable shell execution library.
 - [x] `&&`, `||` and `&` support
 - [ ] `|` support
 - [ ] `>` support
+- [ ] Directory changes (e.g. `cd /tmp/ && ls`)
 
 ## Example usage
 ```typescript
