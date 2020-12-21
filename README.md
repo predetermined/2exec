@@ -6,6 +6,7 @@ A super simple and reliable shell execution library.
 - [x] `&&`, `||` and `&` support
 - [ ] `|` support
 - [ ] `>` support
+- [ ] Execution groups (e.g. `(rm file.txt && echo deleted) || echo failed`)
 - [ ] Directory changes (e.g. `cd /tmp/ && ls`)
 
 ## Example usage
