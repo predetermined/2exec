@@ -4,6 +4,7 @@ A super simple and reliable shell execution library.
 
 ## Features
 - [x] `&&`, `||` and `&` support
+- [x] Built-in stream management
 - [ ] `|` support
 - [ ] `>` support
 - [ ] Execution groups (e.g. `(rm file.txt && echo deleted) || echo failed`)
