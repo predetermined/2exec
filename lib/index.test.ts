@@ -57,3 +57,12 @@ Deno.test(async function orNeverHitsRightSide() {
   assert(result.status === ExecResultStatus.Succeeded);
   assert(result.output === "true!\n");
 });
+
+Deno.test(async function executionGroups() {
+  const result = await exec("(fails && echo false) || echo true", {
+    debug: true,
+  });
+
+  assert(result.status === ExecResultStatus.Succeeded);
+  assert(result.output === "true!\n");
+});
